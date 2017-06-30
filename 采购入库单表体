@@ -1,0 +1,31 @@
+select
+distinct
+T1.pk_org,T1.CMATERIALVID,T1.pk_group,T2.totalnumm,T2.totalnorigtaxmny+T_B.transportationcost as mnyAndTRancost
+from
+ic_purchasein_b T1
+join 
+    (select
+    CMATERIALVID,pk_org,sum(nnum) as totalnumm ,sum(nvl(norigtaxmny,0)) as totalnorigtaxmny
+    from ic_purchasein_b 
+    where ic_purchasein_b.dr=0 and substr(ic_purchasein_b.dbizdate,1,7) = parameter('kjdate') and (ic_purchasein_b.pk_org =parameter('orgname'))
+    group by
+    CMATERIALVID,pk_org) T2
+on
+T2.CMATERIALVID || T2.pk_org = T1.CMATERIALVID || T1.pk_org
+
+left join
+(
+   select
+    T1.pk_org,T1.pk_group,T1.CMATERIALVID,sum(nvl(T2.ncostfactor1,0)) transportationcost
+    from
+    ic_purchasein_b T1
+    left join
+    po_settlebill_b T2
+    on
+    T1.cgeneralbid=T2.PK_PURCHASEIN_B
+    where T1.dr=0 and substr(T1.dbizdate,1,7)= parameter('kjdate') and (T1.pk_org =parameter('orgname'))
+    group by
+    T1.pk_org,T1.pk_group,T1.CMATERIALVID
+) T_B
+on
+T1.pk_org || T1.CMATERIALVID = T_B.pk_org || T_B.CMATERIALVID
